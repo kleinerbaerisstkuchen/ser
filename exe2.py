@@ -17,8 +17,8 @@ def main(argv):
     num_samples = num_states//delta
     t = np.array(mat["t"][delta::delta])
     # H <- [A_inv, C]T
-
-    A_inv = inv(tril(np.ones((num_samples, num_samples))).tocsr())
+    A_inv = np.linalg.inv(np.tril(np.ones((num_samples, num_samples))))
+    # A_inv = inv(tril(np.ones(num_samples, num_samples)).tocsr())
     # A_inv = inv(np.tril(np.ones((num_samples, num_samples))))
     C = csr_matrix(np.eye(num_samples))
     H = vstack([A_inv, C])
@@ -51,7 +51,7 @@ def main(argv):
     sigma = np.sqrt(P_hat.diagonal())
 
     # error
-    x_estimate = P_hat* H.T * W_inv* z
+    x_estimate = P_hat.dot(H_T.dot(W_inv.dot(z)))
     x_true = np.array(mat["x_true"][delta::delta])
     error = x_true-x_estimate
 
