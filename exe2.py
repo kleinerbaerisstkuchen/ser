@@ -2,12 +2,12 @@ from scipy.io import loadmat
 import numpy as np
 
 import matplotlib.pyplot as plt
-from scipy.sparse import csr_matrix, triu, vstack, diags, hstack
+from scipy.sparse import csr_matrix, tril, vstack, diags, hstack
 from scipy.sparse.linalg import inv
 from absl import app, flags
+import scipy.sparse.linalg as splinalg
 
-
-flags.DEFINE_integer("delta", 3000, "time interval between sampling")
+flags.DEFINE_integer("delta", 1, "time interval between sampling")
 
 def main(argv):
     delta = flags.FLAGS.delta
@@ -17,14 +17,12 @@ def main(argv):
     num_samples = num_states//delta
     t = np.array(mat["t"][delta::delta])
     # H <- [A_inv, C]T
-    A_inv = inv(triu(np.ones((num_samples, num_samples))).tocsr())
+
+    A_inv = inv(tril(np.ones((num_samples, num_samples))).tocsr())
     # A_inv = inv(np.tril(np.ones((num_samples, num_samples))))
     C = csr_matrix(np.eye(num_samples))
     H = vstack([A_inv, C])
     H_T = H.T
-    # H = np.concatenate((A_inv,C),axis = 0)
-    # H_t = csr_matrix(np.transpose(H))
-    # H_t = np.transpose(H)
 
     # z <- [v, y]T
     r = np.array(mat["r"][delta::delta])
@@ -46,10 +44,6 @@ def main(argv):
     zero_matrix = csr_matrix((num_samples, num_samples))
     W_inv = vstack([hstack([Q_inv, zero_matrix]), hstack([zero_matrix, R_inv])])
 
-    # W_inv = csr_matrix(np.block([[Q_inv, np.zeros((num_samples, num_samples))],
-    #                       [np.zeros((num_samples, num_samples)), R_inv]]))
-    # W_inv = np.block([[Q_inv, np.zeros((num_samples, num_samples))],
-    #                     [np.zeros((num_samples, num_samples)), R_inv]])
     # sigma
     P_hat_inv = H_T.dot(W_inv.dot(H))
     
