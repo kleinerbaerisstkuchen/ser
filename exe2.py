@@ -1,12 +1,13 @@
 from scipy.io import loadmat
 import numpy as np
-from numpy.linalg import multi_dot, inv
+
 import matplotlib.pyplot as plt
-from scipy.sparse import csc_matrix
+from scipy.sparse import csr_matrix, triu, vstack, diags, hstack
+from scipy.sparse.linalg import inv
 from absl import app, flags
 
 
-flags.DEFINE_integer("delta", 10, "time interval between sampling")
+flags.DEFINE_integer("delta", 3000, "time interval between sampling")
 
 def main(argv):
     delta = flags.FLAGS.delta
@@ -16,10 +17,14 @@ def main(argv):
     num_samples = num_states//delta
     t = np.array(mat["t"][delta::delta])
     # H <- [A_inv, C]T
-    A_inv = inv(np.tril(np.ones((num_samples, num_samples))))
-    C = np.eye(num_samples)
-    H = csc_matrix(np.concatenate((A_inv,C),axis = 0))
-    H_t = csc_matrix(np.transpose(H))
+    A_inv = inv(triu(np.ones((num_samples, num_samples))).tocsr())
+    # A_inv = inv(np.tril(np.ones((num_samples, num_samples))))
+    C = csr_matrix(np.eye(num_samples))
+    H = vstack([A_inv, C])
+    H_T = H.T
+    # H = np.concatenate((A_inv,C),axis = 0)
+    # H_t = csr_matrix(np.transpose(H))
+    # H_t = np.transpose(H)
 
     # z <- [v, y]T
     r = np.array(mat["r"][delta::delta])
@@ -33,18 +38,26 @@ def main(argv):
 
     # W <-[[Q,0],[0, R]]
     r_var = mat["r_var"][0,0]
-    R_inv = inv(np.diag([r_var]*num_samples))
+    R_inv = diags([1/r_var] * num_samples, format='csr')
+    # R_inv = inv(np.diag([r_var]*num_samples))
     v_var = mat["v_var"][0,0]
-    Q_inv = inv(np.diag([v_var]*num_samples))
-    W_inv = csc_matrix(np.block([[Q_inv, np.zeros((num_samples, num_samples))],
-                          [np.zeros((num_samples, num_samples)), R_inv]]))
-    
+    Q_inv = diags([1/v_var] * num_samples, format='csr')
+    # Q_inv = inv(np.diag([v_var]*num_samples))
+    zero_matrix = csr_matrix((num_samples, num_samples))
+    W_inv = vstack([hstack([Q_inv, zero_matrix]), hstack([zero_matrix, R_inv])])
+
+    # W_inv = csr_matrix(np.block([[Q_inv, np.zeros((num_samples, num_samples))],
+    #                       [np.zeros((num_samples, num_samples)), R_inv]]))
+    # W_inv = np.block([[Q_inv, np.zeros((num_samples, num_samples))],
+    #                     [np.zeros((num_samples, num_samples)), R_inv]])
     # sigma
-    P_hat = inv(multi_dot([H_t,W_inv,H]))
-    sigma = np.sqrt(np.diag(P_hat))
+    P_hat_inv = H_T.dot(W_inv.dot(H))
+    
+    P_hat = inv(P_hat_inv)
+    sigma = np.sqrt(P_hat.diagonal())
 
     # error
-    x_estimate = multi_dot([P_hat,H_t,W_inv,z])
+    x_estimate = P_hat* H.T * W_inv* z
     x_true = np.array(mat["x_true"][delta::delta])
     error = x_true-x_estimate
 
@@ -63,8 +76,7 @@ def main(argv):
     plt.xlabel("error[m]")
     plt.ylabel("frequency")
     plt.show 
-    plt.savefig(f"delta {delta}.jpg")
+    plt.savefig(f"4444delta {delta}.jpg")
 
 if __name__ =="__main__":
     app.run(main)
-
