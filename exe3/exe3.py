@@ -8,6 +8,7 @@ from tqdm import tqdm
 
 # parameters
 FLAGS = flags.FLAGS
+<<<<<<< HEAD
 flags.DEFINE_integer("r_max", "1", "Max range of landmark accapted")
 flags.DEFINE_bool("poor_init", "False", "Use poor init condition: x0 = (1, 1, 0.1)")
 flags.DEFINE_bool("CRLB", "False", "Evaluate all the Jacobians at the true robot state")
@@ -15,6 +16,14 @@ flags.DEFINE_bool("make_video", "True", "do we want to make a video of the confi
 
 # load data
 data = loadmat('/home/hanxiongli/hanxiong/ser/exe3/dataset2.mat')
+=======
+flags.DEFINE_integer("r_max", "5", "Max range of landmark accapted")
+flags.DEFINE_bool("poor_init", "False", "Use poor init condition: x0 = (1, 1, 0.1)")
+flags.DEFINE_bool("CRLB", "False", "Evaluate all the Jacobians at the true robot state")
+
+# load data
+data = loadmat('/home/hnaxiong/ser/exe3/dataset2.mat')
+>>>>>>> 4c98ecb38963cf7def625d9a78918683ebeba5aa
 t = data['t']
 
 # true state
@@ -140,10 +149,15 @@ def main(argv):
 
     #initial state and covariance
     if(flags.FLAGS.poor_init):
+<<<<<<< HEAD
         init_state = "poor initial state"
         x = np.array([[1],[1],[0.1]])
     else:  
         init_state = "true initial state"
+=======
+        x = np.array([[1],[1],[0.1]])
+    else:  
+>>>>>>> 4c98ecb38963cf7def625d9a78918683ebeba5aa
         x = np.array([[x_true[0,0]], [y_true[0,0]],[th_true[0,0]]])
     P = np.diag((1, 1, 0.1))
     state_list = [x]
@@ -152,6 +166,10 @@ def main(argv):
     # t_list = [t_last]
     variance_xyth_list = [(0,0,0)]
 
+<<<<<<< HEAD
+=======
+    # for k in tqdm(range(100)):
+>>>>>>> 4c98ecb38963cf7def625d9a78918683ebeba5aa
     for k in tqdm(range(1,len(t))):
         # if true_valid[k] == 1:
         # prediction
@@ -224,8 +242,13 @@ def main(argv):
     plt.figure(figsize=(20, 30)) 
     plt.subplot(3, 1, 1)
     plt.plot(t, x_error, color = "blue")
+<<<<<<< HEAD
     plt.plot(t, x_3sigma, color = "red", linestyle='--')
     plt.plot(t, [-x for x in x_3sigma], color = "red", linestyle='--', )
+=======
+    plt.plot(t, x_3sigma, color = "red")
+    plt.plot(t, [-x for x in x_3sigma], color = "red")
+>>>>>>> 4c98ecb38963cf7def625d9a78918683ebeba5aa
     plt.xlabel("t [s]")
     plt.ylabel("[m]")
     plt.title('Error in x')
@@ -233,8 +256,13 @@ def main(argv):
 
     plt.subplot(3, 1, 2)
     plt.plot(t, y_error,color = "blue")
+<<<<<<< HEAD
     plt.plot(t, y_3sigma, color = "red", linestyle='--')
     plt.plot(t, [-y for y in y_3sigma], color = "red", linestyle='--')
+=======
+    plt.plot(t, y_3sigma, color = "red")
+    plt.plot(t, [-y for y in y_3sigma], color = "red")
+>>>>>>> 4c98ecb38963cf7def625d9a78918683ebeba5aa
     plt.xlabel("t [s]")
     plt.ylabel("[m]")
     plt.title('Error in y')
@@ -242,12 +270,18 @@ def main(argv):
 
     plt.subplot(3, 1, 3)
     plt.plot(t, th_error,color = "blue")
+<<<<<<< HEAD
     plt.plot(t, th_3sigma, color = "red", linestyle='--', )
     plt.plot(t, [-th for th in th_3sigma], color = "red", linestyle='--', )
+=======
+    plt.plot(t, th_3sigma, color = "red")
+    plt.plot(t, [-th for th in th_3sigma], color = "red")
+>>>>>>> 4c98ecb38963cf7def625d9a78918683ebeba5aa
     plt.xlabel("t [s]")
     plt.ylabel("[rad]")
     plt.title('Error in theta')
     plt.grid(True)
+<<<<<<< HEAD
     if(flags.FLAGS.CRLB):
         plt.suptitle(f'r_max = {r_max}, init_state is {init_state}, CRLB solution', fontsize=16, y=0.92)
     else:
@@ -311,8 +345,58 @@ def main(argv):
 
         # progress_bar.close()
         animation.save('EKF.mp4', writer='ffmpeg', fps=15)
+=======
+    plt.savefig(f"/home/hnaxiong/ser/exe3/r_max {r_max}.jpg")
+
+    # annimation
+    from matplotlib.animation import FuncAnimation
+    
+
+    def plot_ellipse(ax, mean, cov, color='red', label='3-sigma Covariance Ellipse'):
+        eigenvalues, eigenvectors = np.linalg.eig(cov)
+        angle = np.degrees(np.arctan2(eigenvectors[1, 0], eigenvectors[0, 0]))
+        ellipse = plt.matplotlib.patches.Ellipse(xy=mean, width=np.sqrt(eigenvalues[0])*3*2,
+                                                height=np.sqrt(eigenvalues[1])*3*2, angle=angle,
+                                                color=color, fill=False, label=label)
+        ax.add_patch(ellipse)
+
+    def update(frame):
+        plt.clf()
+
+        # Update the true landmarks
+        plt.scatter(l[:, 0], l[:, 1], color='black', marker='.', label='Landmarks')
+
+        # Update the true robot position
+        x_true_robot = x_true[frame]
+        y_true_robot = y_true[frame]
+        plt.scatter(x_true_robot, y_true_robot, color='blue', marker='o', label='True Robot Position')
+
+        # Update the estimated robot position
+        x_est_robot = state_list[frame][0]
+        y_est_robot = state_list[frame][1]
+        plt.scatter(x_est_robot, y_est_robot, color='red', marker='o', label='Estimated Robot Position')
+
+        # Update the 3-sigma covariance ellipse
+        cov = cov_list[frame][0:2, 0:2]
+        plot_ellipse(plt.gca(), (x_est_robot, y_est_robot), cov, color='red')
+
+        plt.legend()
+        plt.title('EKF Animation')
+        plt.xlabel('X')
+        plt.ylabel('Y')
+        plt.show
+
+    # Create the animation
+    animation = FuncAnimation(plt.figure(), update, frames=np.arange(1000,1100), interval=50, repeat=False)
+
+    animation.save('EKF.mp4', writer='ffmpeg', fps=10)
+>>>>>>> 4c98ecb38963cf7def625d9a78918683ebeba5aa
 
 
 
 if __name__ == '__main__': 
+<<<<<<< HEAD
     app.run(main)
+=======
+    app.run(main)
+>>>>>>> 4c98ecb38963cf7def625d9a78918683ebeba5aa
