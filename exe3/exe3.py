@@ -262,8 +262,8 @@ def main(argv):
         def plot_ellipse(ax, mean, cov, color='red', label='3-sigma Covariance Ellipse'):
             eigenvalues, eigenvectors = np.linalg.eig(cov)
             angle = np.degrees(np.arctan2(eigenvectors[1, 0], eigenvectors[0, 0]))
-            width = np.sqrt(eigenvalues[0])*3*10
-            height = np.sqrt(eigenvalues[1])*3*10
+            width = np.sqrt(eigenvalues[0])*3
+            height = np.sqrt(eigenvalues[1])*3
             ellipse = plt.matplotlib.patches.Ellipse(xy=mean, width=width,
                                                     height=height, angle=angle,
                                                     color=color, fill=False, label=label)
@@ -304,7 +304,7 @@ def main(argv):
 
         # Create the animation
         # animation = FuncAnimation(plt.figure(), update, frames=np.arange(len(t)), interval=50, repeat=False)
-        animation = FuncAnimation(plt.figure(figsize=(20, 8)), update, frames=np.arange(1000,1030), interval=50, repeat=False)
+        animation = FuncAnimation(plt.figure(figsize=(20, 8)), update, frames=np.arange(0,30), interval=50, repeat=False)
 
         # progress_bar = tqdm(total=len(t), desc='Creating Animation', position=0, leave=True)
         # display(animation.to_jshtml(), display_id='animation')
