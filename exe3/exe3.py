@@ -10,8 +10,8 @@ from tqdm import tqdm
 FLAGS = flags.FLAGS
 flags.DEFINE_integer("r_max", "1", "Max range of landmark accapted")
 flags.DEFINE_bool("poor_init", "False", "Use poor init condition: x0 = (1, 1, 0.1)")
-flags.DEFINE_bool("CRLB", "False", "Evaluate all the Jacobians at the true robot state")
-flags.DEFINE_bool("make_video", "True", "do we want to make a video of the configuration")
+flags.DEFINE_bool("CRLB", "True", "Evaluate all the Jacobians at the true robot state")
+flags.DEFINE_bool("make_video", "False", "do we want to make a video of the configuration")
 
 # load data
 data = loadmat('/home/hnaxiong/ser/exe3/dataset2.mat')
@@ -155,14 +155,17 @@ def main(argv):
         # prediction
         T = t[k][0]-t[k-1][0]
         input = np.array([[v[k,0]], [om[k,0]]])
+
+        if(flags.FLAGS.CRLB):
+            x[0] = x_true[k-1]
+            x[1] = y_true[k-1]
+            x[2] = th_true[k-1]
+
         x_check, Jacobian_F, Q_prime = motion_model(x, input, T,Func_F, Func_w, Func_pred_x)
         P_check = multi_dot([Jacobian_F, P, Jacobian_F.T]) + Q_prime
 
         #correction
         valid_lm_indices = np.where(r[k]!= 0)
-
-        if(flags.FLAGS.CRLB):
-            x_check = np.array([[x_true[k,0]], [y_true[k,0]], [th_true[k,0]]])
 
         #if we got no measurment from landmark
         if valid_lm_indices[0].size == 0:
@@ -192,18 +195,18 @@ def main(argv):
             x = x_hat
             P = P_hat
 
-        state_list.append(x)
-        cov_list.append(P)
+        state_list.append(x.copy())
+        cov_list.append(P.copy())
         variance_xyth_list.append(variance_xyth)
     
     # compute error and extract variance
 
     x_estimate = np.array([state[0,0] for state in state_list]).reshape(-1, 1)    
-    x_error = x_true - np.array(x_estimate)
+    x_error = np.array(x_estimate) - x_true 
     y_estimate = np.array([state[1,0] for state in state_list]).reshape(-1, 1)    
-    y_error = y_true - y_estimate
+    y_error =  y_estimate - y_true
     th_estimate = np.array([state[2,0] for state in state_list]).reshape(-1, 1)
-    th_error = th_true - th_estimate
+    th_error = th_estimate - th_true
     th_error = np.mod(th_error + np.pi, 2*np.pi)-np.pi
     
 
